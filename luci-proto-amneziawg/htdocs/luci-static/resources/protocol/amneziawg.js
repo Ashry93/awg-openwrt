@@ -601,6 +601,13 @@ return network.registerProtocol('amneziawg', {
 			    cancel = nodes.nextElementSibling.querySelector('.btn'),
 			    config = this.parseConfig(input);
 
+			const showError = function(e) {
+				error.firstChild.data = _('Cannot import configuration: %s').format(e?.message ?? e);
+				error.style.display = 'block';
+			};
+
+			error.style.display = 'none';
+
 			if (typeof(config) == 'string') {
 				error.firstChild.data = _('Cannot parse configuration: %s').format(config);
 				error.style.display = 'block';
@@ -671,7 +678,7 @@ return network.registerProtocol('amneziawg', {
 					return s.map.save(null, true);
 				}).then(function() {
 					cancel.click();
-				});
+				}).catch(showError);
 			}
 			else {
 				return getPublicAndPrivateKeyFromPrivate(config.interface_privatekey).then(function(keypair) {
@@ -701,13 +708,15 @@ return network.registerProtocol('amneziawg', {
 					return s.map.save(null, true);
 				}).then(function() {
 					cancel.click();
-				});
+				}).catch(showError);
 			}
 		};
 
 		ss.handleConfigImport = function(mode) {
 			const mapNode = ss.getActiveModalMap(),
 			    headNode = mapNode.parentNode.querySelector('h4'),
+			    // modal Save must stay unreachable while the map is hidden, or handleModalSave() throws
+			    buttonRow = mapNode.parentNode.querySelector(':scope > .button-row'),
 			    parent = this.map,
 			    fileInput = E('input', {
 				    'type': 'file',
@@ -757,7 +766,7 @@ return network.registerProtocol('amneziawg', {
 				nodes.parentNode.removeChild(nodes.nextSibling);
 				nodes.parentNode.removeChild(nodes);
 				mapNode.classList.remove('hidden');
-				mapNode.nextSibling.classList.remove('hidden');
+				buttonRow?.classList.remove('hidden');
 				headNode.removeChild(headNode.lastChild);
 				window.removeEventListener('dragover', handleWindowDragDropIgnore);
 				window.removeEventListener('drop', handleWindowDragDropIgnore);
@@ -773,7 +782,7 @@ return network.registerProtocol('amneziawg', {
 			}
 
 			mapNode.classList.add('hidden');
-			mapNode.nextElementSibling.classList.add('hidden');
+			buttonRow?.classList.add('hidden');
 
 			headNode.appendChild(E('span', [ ' » ', (mode == 'full') ? _('Import configuration') : _('Import as peer') ]));
 			mapNode.parentNode.appendChild(E([], [
